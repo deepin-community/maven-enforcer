@@ -19,24 +19,35 @@ package org.apache.maven.plugins.enforcer;
  * under the License.
  */
 
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Properties;
 
+import org.apache.maven.artifact.Artifact;
+import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleHelper;
 import org.apache.maven.execution.MavenExecutionRequest;
 import org.apache.maven.execution.MavenExecutionResult;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.model.InputLocation;
+import org.apache.maven.model.InputSource;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.plugin.PluginParameterExpressionEvaluator;
 import org.apache.maven.plugin.logging.SystemStreamLog;
 import org.apache.maven.plugins.enforcer.utils.MockEnforcerExpressionEvaluator;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.project.ProjectBuildingRequest;
+import org.apache.maven.shared.dependency.graph.DependencyCollectorBuilder;
+import org.apache.maven.shared.dependency.graph.internal.DefaultDependencyNode;
 import org.codehaus.plexus.PlexusContainer;
 import org.codehaus.plexus.component.configurator.expression.ExpressionEvaluator;
-import org.sonatype.aether.RepositorySystemSession;
+import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
+import org.mockito.Mockito;
 
 /**
  * The Class EnforcerTestUtils.
@@ -55,6 +66,9 @@ public final class EnforcerTestUtils
         PlexusContainer mock = mock( PlexusContainer.class );
 
         MavenExecutionRequest mer = mock( MavenExecutionRequest.class );
+        ProjectBuildingRequest buildingRequest = mock( ProjectBuildingRequest.class );
+        when( buildingRequest.setRepositorySession( any() ) ).thenReturn( buildingRequest );
+        when( mer.getProjectBuildingRequest() ).thenReturn( buildingRequest );
 
         Properties systemProperties = new Properties();
         systemProperties.put( "maven.version", "3.0" );
@@ -62,7 +76,7 @@ public final class EnforcerTestUtils
         when( mer.getSystemProperties() ).thenReturn( systemProperties );
 
         MavenExecutionResult meresult = mock( MavenExecutionResult.class );
-        return new MavenSession( mock, (RepositorySystemSession) null, mer, meresult );
+        return new MavenSession( mock, null, mer, meresult );
     }
 
     /**
@@ -118,7 +132,29 @@ public final class EnforcerTestUtils
             session.setCurrentProject( project );
             eval = new PluginParameterExpressionEvaluator( session, mockExecution );
         }
-        return new DefaultEnforcementRuleHelper( session, eval, new SystemStreamLog(), null );
+        PlexusContainer container = Mockito.mock( PlexusContainer.class );
+
+        Artifact artifact =
+            new DefaultArtifact( "groupId", "artifactId", "version", "compile", "jar", "classifier", null );
+        Artifact v1 = new DefaultArtifact( "groupId", "artifact", "1.0.0", "compile", "jar", "", null );
+        Artifact v2 = new DefaultArtifact( "groupId", "artifact", "2.0.0", "compile", "jar", "", null );
+        final DefaultDependencyNode node = new DefaultDependencyNode( artifact );
+        DefaultDependencyNode child1 = new DefaultDependencyNode( node, v1, null, null, null );
+        child1.setChildren( Collections.emptyList() );
+        DefaultDependencyNode child2 = new DefaultDependencyNode( node, v2, null, null, null );
+        child2.setChildren( Collections.emptyList() );
+        node.setChildren( Arrays.asList( child1, child2 ) );
+
+        try
+        {
+            when( container.lookup( DependencyCollectorBuilder.class ) )
+                    .thenReturn( ( buildingRequest, filter ) -> node );
+        }
+        catch ( ComponentLookupException e )
+        {
+            // test will fail
+        }
+        return new DefaultEnforcementRuleHelper( session, eval, new SystemStreamLog(), container );
     }
 
     /**
@@ -144,10 +180,14 @@ public final class EnforcerTestUtils
      */
     public static Plugin newPlugin( String groupId, String artifactId, String version )
     {
+        InputSource inputSource = new InputSource();
+        inputSource.setModelId( "unit" );
+
         Plugin plugin = new Plugin();
         plugin.setArtifactId( artifactId );
         plugin.setGroupId( groupId );
         plugin.setVersion( version );
+        plugin.setLocation( "version", new InputLocation( 0, 0, inputSource ) );
         return plugin;
     }
 }

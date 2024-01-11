@@ -23,10 +23,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.maven.artifact.repository.ArtifactRepository;
-import org.apache.maven.artifact.repository.DefaultArtifactRepository;
+import org.apache.maven.artifact.repository.MavenArtifactRepository;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleException;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleHelper;
-import org.codehaus.plexus.PlexusTestCase;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Test the "banned repositories" rule.
@@ -34,7 +37,6 @@ import org.codehaus.plexus.PlexusTestCase;
  * @author <a href="mailto:wangyf2010@gmail.com">Simon Wang</a>
  */
 public class TestBannedRepositories
-    extends PlexusTestCase
 {
     private EnforcerRuleHelper helper;
 
@@ -42,11 +44,9 @@ public class TestBannedRepositories
 
     private MockProject project;
 
+    @BeforeEach
     public void setUp()
-        throws Exception
     {
-        super.setUp();
-
         rule = new BannedRepositories();
         rule.setMessage( "my message" );
 
@@ -57,11 +57,12 @@ public class TestBannedRepositories
         helper = EnforcerTestUtils.getHelper( project );
     }
 
+    @Test
     public void testNoCheckRules()
         throws EnforcerRuleException
     {
-        DefaultArtifactRepository repo1 = new DefaultArtifactRepository( "repo1", "http://repo1/", null );
-        List<ArtifactRepository> repos = new ArrayList<ArtifactRepository>();
+        ArtifactRepository repo1 = new MavenArtifactRepository( "repo1", "http://repo1/", null, null, null );
+        List<ArtifactRepository> repos = new ArrayList<>();
         repos.add( repo1 );
 
         project.setRemoteArtifactRepositories( repos );
@@ -70,12 +71,13 @@ public class TestBannedRepositories
         rule.execute( helper );
     }
 
+    @Test
     public void testBannedRepositories()
     {
-        DefaultArtifactRepository repo1 = new DefaultArtifactRepository( "repo1", "http://repo1/", null );
-        DefaultArtifactRepository repo2 = new DefaultArtifactRepository( "repo1", "http://repo1/test", null );
-        DefaultArtifactRepository repo3 = new DefaultArtifactRepository( "repo1", "http://repo2/test", null );
-        List<ArtifactRepository> repos = new ArrayList<ArtifactRepository>();
+        ArtifactRepository repo1 = new MavenArtifactRepository( "repo1", "http://repo1/", null, null, null );
+        ArtifactRepository repo2 = new MavenArtifactRepository( "repo1", "http://repo1/test", null, null, null );
+        ArtifactRepository repo3 = new MavenArtifactRepository( "repo1", "http://repo2/test", null, null, null );
+        List<ArtifactRepository> repos = new ArrayList<>();
         repos.add( repo1 );
         repos.add( repo2 );
         repos.add( repo3 );
@@ -83,7 +85,7 @@ public class TestBannedRepositories
         project.setRemoteArtifactRepositories( repos );
         project.setPluginArtifactRepositories( repos );
 
-        List<String> bannedRepositories = new ArrayList<String>();
+        List<String> bannedRepositories = new ArrayList<>();
         String pattern1 = "http://repo1/*";
 
         bannedRepositories.add( pattern1 );
@@ -101,20 +103,21 @@ public class TestBannedRepositories
 
     }
 
+    @Test
     public void testAllowedRepositoriesAllOK()
         throws EnforcerRuleException
     {
-        DefaultArtifactRepository repo1 = new DefaultArtifactRepository( "repo1", "http://repo1/", null );
-        DefaultArtifactRepository repo2 = new DefaultArtifactRepository( "repo1", "http://repo1/test", null );
+        ArtifactRepository repo1 = new MavenArtifactRepository( "repo1", "http://repo1/", null, null, null );
+        ArtifactRepository repo2 = new MavenArtifactRepository( "repo1", "http://repo1/test", null, null, null );
 
-        List<ArtifactRepository> repos = new ArrayList<ArtifactRepository>();
+        List<ArtifactRepository> repos = new ArrayList<>();
         repos.add( repo1 );
         repos.add( repo2 );
 
         project.setRemoteArtifactRepositories( repos );
         project.setPluginArtifactRepositories( repos );
 
-        List<String> bannedRepositories = new ArrayList<String>();
+        List<String> bannedRepositories = new ArrayList<>();
         String pattern1 = "http://repo1/*";
 
         bannedRepositories.add( pattern1 );
@@ -125,12 +128,13 @@ public class TestBannedRepositories
         rule.execute( helper );
     }
 
+    @Test
     public void testAllowedRepositoriesException()
     {
-        DefaultArtifactRepository repo1 = new DefaultArtifactRepository( "repo1", "http://repo1/", null );
-        DefaultArtifactRepository repo2 = new DefaultArtifactRepository( "repo1", "http://repo1/test", null );
-        DefaultArtifactRepository repo3 = new DefaultArtifactRepository( "repo1", "http://repo2/test", null );
-        List<ArtifactRepository> repos = new ArrayList<ArtifactRepository>();
+        ArtifactRepository repo1 = new MavenArtifactRepository( "repo1", "http://repo1/", null, null, null );
+        ArtifactRepository repo2 = new MavenArtifactRepository( "repo1", "http://repo1/test", null, null, null );
+        ArtifactRepository repo3 = new MavenArtifactRepository( "repo1", "http://repo2/test", null, null, null );
+        List<ArtifactRepository> repos = new ArrayList<>();
         repos.add( repo1 );
         repos.add( repo2 );
         repos.add( repo3 );
@@ -138,7 +142,7 @@ public class TestBannedRepositories
         project.setRemoteArtifactRepositories( repos );
         project.setPluginArtifactRepositories( repos );
 
-        List<String> patterns = new ArrayList<String>();
+        List<String> patterns = new ArrayList<>();
         String pattern1 = "http://repo1/*";
 
         patterns.add( pattern1 );
@@ -154,6 +158,5 @@ public class TestBannedRepositories
         catch ( EnforcerRuleException e )
         {
         }
-
     }
 }

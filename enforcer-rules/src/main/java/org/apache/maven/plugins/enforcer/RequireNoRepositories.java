@@ -114,14 +114,12 @@ public class RequireNoRepositories
     {
         this.allowSnapshotPluginRepositories = allowSnapshotPluginRepositories;
     }
-    
-    private Log logger;
 
     @Override
     public void execute( EnforcerRuleHelper helper )
         throws EnforcerRuleException
     {
-        logger = helper.getLog();
+        Log logger = helper.getLog();
 
         MavenSession session;
         try
@@ -130,7 +128,7 @@ public class RequireNoRepositories
 
             List<MavenProject> sortedProjects = session.getProjectDependencyGraph().getSortedProjects();
 
-            List<Model> models = new ArrayList<Model>();
+            List<Model> models = new ArrayList<>();
             for ( MavenProject mavenProject : sortedProjects )
             {
                 logger.debug( "Scanning project: " + mavenProject.getGroupId() + ":" + mavenProject.getArtifactId()
@@ -138,10 +136,10 @@ public class RequireNoRepositories
                 models.add( mavenProject.getOriginalModel() );
             }
             
-            List<Model> badModels = new ArrayList<Model>();
+            List<Model> badModels = new ArrayList<>();
 
             StringBuilder newMsg = new StringBuilder();
-            newMsg.append( "Some poms have repositories defined:\n" );
+            newMsg.append( "Some poms have repositories defined:" + System.lineSeparator() );
 
             for ( Model model : models )
             {
@@ -209,7 +207,7 @@ public class RequireNoRepositories
     private static List<String> findBannedRepositories( List<Repository> repos, List<String> allowedRepos,
                                                         boolean allowSnapshots )
     {
-        List<String> bannedRepos = new ArrayList<String>( allowedRepos.size() );
+        List<String> bannedRepos = new ArrayList<>( allowedRepos.size() );
         for ( Repository r : repos )
         {
             if ( !allowedRepos.contains( r.getId() ) )

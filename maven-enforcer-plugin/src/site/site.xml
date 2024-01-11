@@ -29,12 +29,16 @@ under the License.
       <item name="Usage" href="usage.html"/>
       <item name="FAQ" href="faq.html"/>
       <item name="Built-In Rules" href="../../enforcer/enforcer-rules/index.html"/>
+      <item name="Thirdparty Rules" href="thirdparty-rules.html"/>
       <!-- According to https://issues.apache.org/jira/browse/MNGSITE-152 -->
       <item name="License" href="http://www.apache.org/licenses/"/>
       <item name="Download" href="../download.html"/>
     </menu>
     <menu name="Custom Rules">
       <item name="Writing a custom rule" href="../../enforcer/enforcer-api/writing-a-custom-rule.html"/>
+    </menu>
+    <menu name="Examples">
+      <item name="Check specific rule via CLI" href="examples/check-specific-rule-via-cli.html"/>
     </menu>
     <menu name="Resources">
       <item name="Version Ranges" href="https://cwiki.apache.org/confluence/display/MAVENOLD/Dependency+Mediation+and+Conflict+Resolution#DependencyMediationandConflictResolution-DependencyVersionRanges"/>

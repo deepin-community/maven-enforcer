@@ -38,7 +38,6 @@ import org.codehaus.plexus.util.StringUtils;
  * is exactly the same as the Maven Os profile activation so the same values are allowed here.
  *
  * @author <a href="mailto:brianf@apache.org">Brian Fox</a>
- * @version $Id$
  */
 public class RequireOS
     extends AbstractStandardEnforcerRule
@@ -385,7 +384,7 @@ public class RequireOS
     public String getCacheId()
     {
         // return the hashcodes of all the parameters
-        StringBuffer b = new StringBuffer();
+        StringBuilder b = new StringBuilder();
         if ( StringUtils.isNotEmpty( version ) )
         {
             b.append( version.hashCode() );

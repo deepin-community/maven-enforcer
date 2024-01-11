@@ -20,8 +20,10 @@ package org.apache.maven.plugins.enforcer;
  */
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.apache.maven.enforcer.rule.api.EnforcerRuleHelper;
 import org.apache.maven.execution.MavenSession;
@@ -36,7 +38,6 @@ import org.codehaus.plexus.component.repository.exception.ComponentLookupExcepti
  * session and provide useful elements like the log.
  *
  * @author <a href="mailto:brianf@apache.org">Brian Fox</a>
- * @version $Id$
  */
 public class DefaultEnforcementRuleHelper
     implements EnforcerRuleHelper
@@ -50,6 +51,9 @@ public class DefaultEnforcementRuleHelper
 
     /** The container. */
     private PlexusContainer container;
+
+    /** A cache. */
+    private Map<String, Object> cache;
 
     /**
      * Instantiates a new default enforcement rule helper.
@@ -72,6 +76,8 @@ public class DefaultEnforcementRuleHelper
         {
             this.container = session.getContainer();
         }
+
+        this.cache = new HashMap<>();
     }
 
     @Override
@@ -139,5 +145,11 @@ public class DefaultEnforcementRuleHelper
     public PlexusContainer getContainer()
     {
         return container;
+    }
+
+    @Override
+    public Object getCache( String key, Supplier<?> producer )
+    {
+        return cache.computeIfAbsent( key, ( x ) -> producer.get() );
     }
 }

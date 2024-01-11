@@ -19,18 +19,21 @@ package org.apache.maven.plugins.enforcer;
  * under the License.
  */
 
-import junit.framework.TestCase;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import org.apache.maven.enforcer.rule.api.EnforcerRuleException;
+import org.junit.jupiter.api.Test;
 
 /**
  * Test AlwaysFail rule.
+ * 
  * @author Ben Lidgey
  * @see AlwaysFail
  */
-public class TestAlwaysFail extends TestCase
+public class TestAlwaysFail
 {
-
+    @Test
     public void testExecute()
     {
         final AlwaysFail rule = new AlwaysFail();
@@ -42,7 +45,7 @@ public class TestAlwaysFail extends TestCase
         }
         catch ( EnforcerRuleException e )
         {
-            assertTrue( true );
+            assertNotNull( e.getMessage() );
         }
     }
 

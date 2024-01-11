@@ -1,2 +1,1 @@
-maven-plugin-tools-dependency-version.patch
-maven-dependency-tree-compatibility.patch
+01-maven-dependency-tree-compatibility.patch

@@ -42,7 +42,7 @@ public class RequireSnapshotVersion
         throws EnforcerRuleException
     {
 
-        MavenProject project = getProject( helper );
+        MavenProject project = getProject( false, helper );
         Artifact artifact = project.getArtifact();
 
         if ( !artifact.isSnapshot() )
@@ -51,14 +51,15 @@ public class RequireSnapshotVersion
             StringBuilder sb = new StringBuilder();
             if ( message != null )
             {
-                sb.append( message ).append( '\n' );
+                sb.append( message ).append( System.lineSeparator() );
             }
             sb.append( "This project cannot be a release:" ).append( artifact.getId() );
             throw new EnforcerRuleException( sb.toString() );
         }
-        if ( failWhenParentIsRelease )
+        if ( failWhenParentIsRelease && project.hasParent() )
         {
-            Artifact parentArtifact = project.getParentArtifact();
+            // project.getParentArtifact() does not work here if a "CI Friendly Version" is used (e.g. ${revision})
+            Artifact parentArtifact = getProject( true, helper ).getArtifact();
             if ( parentArtifact != null && !parentArtifact.isSnapshot() )
             {
                 throw new EnforcerRuleException( "Parent cannot be a release: " + parentArtifact.getId() );
@@ -67,12 +68,13 @@ public class RequireSnapshotVersion
 
     }
 
-    private MavenProject getProject( EnforcerRuleHelper helper )
+    private MavenProject getProject( boolean parent, EnforcerRuleHelper helper )
         throws EnforcerRuleException
     {
+        String expression = parent ? "${project.parent}" : "${project}";
         try
         {
-            return (MavenProject) helper.evaluate( "${project}" );
+            return (MavenProject) helper.evaluate( expression );
         }
         catch ( ExpressionEvaluationException eee )
         {

@@ -19,11 +19,9 @@ package org.apache.maven.plugins.enforcer;
  * under the License.
  */
 
-import static org.hamcrest.CoreMatchers.startsWith;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Iterator;
 
@@ -33,7 +31,7 @@ import org.apache.maven.model.profile.activation.OperatingSystemProfileActivator
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugin.logging.SystemStreamLog;
 import org.codehaus.plexus.util.Os;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * Exhaustively check the OS mojo.
@@ -52,15 +50,15 @@ public class TestRequireOS
         Log log = new SystemStreamLog();
 
         RequireOS rule = new RequireOS( new OperatingSystemProfileActivator() );
-        
+
         rule.displayOSInfo( log, true );
 
         Iterator<String> iter = Os.getValidFamilies().iterator();
-        String validFamily = null;
+        String validFamily;
         String invalidFamily = null;
         while ( iter.hasNext() )
         {
-            String fam = (String) iter.next();
+            String fam = iter.next();
             if ( !Os.isFamily( fam ) )
             {
                 invalidFamily = fam;
@@ -113,15 +111,15 @@ public class TestRequireOS
         rule.setVersion( "!somecrazyversion" );
         assertTrue( rule.isAllowed() );
     }
-    
+
     @Test
-    public void testInvalidFamily() throws Exception
+    public void testInvalidFamily()
     {
         RequireOS rule = new RequireOS();
-        
+
         EnforcerRuleHelper helper = EnforcerTestUtils.getHelper();
         helper.getContainer().addComponent( new OperatingSystemProfileActivator(), "os" );
-        
+
         rule.setFamily( "junk" );
         try
         {
@@ -131,7 +129,7 @@ public class TestRequireOS
         catch ( EnforcerRuleException e )
         {
             assertThat( e.getMessage(), startsWith( "Invalid Family type used. Valid family types are: " ) );
-        } 
+        }
     }
 
     @Test

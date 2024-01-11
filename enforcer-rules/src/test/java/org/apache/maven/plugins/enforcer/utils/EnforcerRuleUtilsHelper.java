@@ -1,7 +1,5 @@
 package org.apache.maven.plugins.enforcer.utils;
 
-import static org.junit.Assert.fail;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -24,6 +22,8 @@ import static org.junit.Assert.fail;
 import org.apache.maven.enforcer.rule.api.EnforcerRule;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleException;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleHelper;
+
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * The Class TestEnforcerRuleUtils.
@@ -54,7 +54,7 @@ public class EnforcerRuleUtilsHelper
         {
             if ( !shouldFail )
             {
-                fail( "No Exception expected:" + e.getLocalizedMessage() );
+                fail( "No Exception expected:" + e.getMessage() );
             }
             helper.getLog().debug( e.getMessage() );
         }
