@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.commons.lang3.SystemUtils;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleException;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleHelper;
 import org.apache.maven.execution.MavenSession;
@@ -44,6 +43,8 @@ import org.codehaus.plexus.util.StringUtils;
 public class ReactorModuleConvergence
     extends AbstractNonCacheableEnforcerRule
 {
+    private static final String MODULE_TEXT = " module: ";
+
     private boolean ignoreModuleDependencies = false;
 
     private Log logger;
@@ -86,13 +87,13 @@ public class ReactorModuleConvergence
             existParentsWhichAreNotPartOfTheReactor( sortedProjects );
         if ( !parentsWhichAreNotPartOfTheReactor.isEmpty() )
         {
-            StringBuilder sb = new StringBuilder().append( SystemUtils.LINE_SEPARATOR );
+            StringBuilder sb = new StringBuilder().append( System.lineSeparator() );
             addMessageIfExist( sb );
             for ( MavenProject mavenProject : parentsWhichAreNotPartOfTheReactor )
             {
-                sb.append( " module: " );
+                sb.append( MODULE_TEXT );
                 sb.append( mavenProject.getId() );
-                sb.append( SystemUtils.LINE_SEPARATOR );
+                sb.append( System.lineSeparator() );
             }
             throw new EnforcerRuleException( "Module parents have been found which could not be found in the reactor."
                 + sb.toString() );
@@ -111,13 +112,13 @@ public class ReactorModuleConvergence
         List<MavenProject> modulesWithoutParentsInReactor = existModulesWithoutParentsInReactor( sortedProjects );
         if ( !modulesWithoutParentsInReactor.isEmpty() )
         {
-            StringBuilder sb = new StringBuilder().append( SystemUtils.LINE_SEPARATOR );
+            StringBuilder sb = new StringBuilder().append( System.lineSeparator() );
             addMessageIfExist( sb );
             for ( MavenProject mavenProject : modulesWithoutParentsInReactor )
             {
-                sb.append( " module: " );
+                sb.append( MODULE_TEXT );
                 sb.append( mavenProject.getId() );
-                sb.append( SystemUtils.LINE_SEPARATOR );
+                sb.append( System.lineSeparator() );
             }
             throw new EnforcerRuleException( "Reactor contains modules without parents." + sb.toString() );
         }
@@ -133,21 +134,21 @@ public class ReactorModuleConvergence
             areThereDependenciesWhichAreNotPartOfTheReactor( reactorVersion, sortedProjects );
         if ( !areThereDependenciesWhichAreNotPartOfTheReactor.isEmpty() )
         {
-            StringBuilder sb = new StringBuilder().append( SystemUtils.LINE_SEPARATOR );
+            StringBuilder sb = new StringBuilder().append( System.lineSeparator() );
             addMessageIfExist( sb );
             // CHECKSTYLE_OFF: LineLength
             for ( Entry<MavenProject, List<Dependency>> item : areThereDependenciesWhichAreNotPartOfTheReactor.entrySet() )
             {
-                sb.append( " module: " );
+                sb.append( MODULE_TEXT );
                 sb.append( item.getKey().getId() );
-                sb.append( SystemUtils.LINE_SEPARATOR );
+                sb.append( System.lineSeparator() );
                 for ( Dependency dependency : item.getValue() )
                 {
                     String id =
                         dependency.getGroupId() + ":" + dependency.getArtifactId() + ":" + dependency.getVersion();
                     sb.append( "    dependency: " );
                     sb.append( id );
-                    sb.append( SystemUtils.LINE_SEPARATOR );
+                    sb.append( System.lineSeparator() );
                 }
             }
             throw new EnforcerRuleException(
@@ -172,7 +173,7 @@ public class ReactorModuleConvergence
         List<MavenProject> areParentsFromTheReactor = areParentsFromTheReactor( reactorVersion, sortedProjects );
         if ( !areParentsFromTheReactor.isEmpty() )
         {
-            StringBuilder sb = new StringBuilder().append( SystemUtils.LINE_SEPARATOR );
+            StringBuilder sb = new StringBuilder().append( System.lineSeparator() );
             addMessageIfExist( sb );
             for ( MavenProject mavenProject : areParentsFromTheReactor )
             {
@@ -180,7 +181,7 @@ public class ReactorModuleConvergence
                 sb.append( mavenProject.getId() );
                 sb.append( " parent:" );
                 sb.append( mavenProject.getParent().getId() );
-                sb.append( SystemUtils.LINE_SEPARATOR );
+                sb.append( System.lineSeparator() );
             }
             throw new EnforcerRuleException( "Reactor modules have parents which contain a wrong version."
                 + sb.toString() );
@@ -199,13 +200,13 @@ public class ReactorModuleConvergence
         List<MavenProject> consistenceCheckResult = isReactorVersionConsistent( sortedProjects );
         if ( !consistenceCheckResult.isEmpty() )
         {
-            StringBuilder sb = new StringBuilder().append( SystemUtils.LINE_SEPARATOR );
+            StringBuilder sb = new StringBuilder().append( System.lineSeparator() );
             addMessageIfExist( sb );
             for ( MavenProject mavenProject : consistenceCheckResult )
             {
                 sb.append( " --> " );
                 sb.append( mavenProject.getId() );
-                sb.append( SystemUtils.LINE_SEPARATOR );
+                sb.append( System.lineSeparator() );
             }
             throw new EnforcerRuleException( "The reactor contains different versions." + sb.toString() );
         }
@@ -213,7 +214,7 @@ public class ReactorModuleConvergence
 
     private List<MavenProject> areParentsFromTheReactor( String reactorVersion, List<MavenProject> sortedProjects )
     {
-        List<MavenProject> result = new ArrayList<MavenProject>();
+        List<MavenProject> result = new ArrayList<>();
 
         for ( MavenProject mavenProject : sortedProjects )
         {
@@ -242,7 +243,7 @@ public class ReactorModuleConvergence
 
     private List<MavenProject> existParentsWhichAreNotPartOfTheReactor( List<MavenProject> sortedProjects )
     {
-        List<MavenProject> result = new ArrayList<MavenProject>();
+        List<MavenProject> result = new ArrayList<>();
 
         for ( MavenProject mavenProject : sortedProjects )
         {
@@ -314,7 +315,7 @@ public class ReactorModuleConvergence
      */
     private List<MavenProject> existModulesWithoutParentsInReactor( List<MavenProject> sortedProjects )
     {
-        List<MavenProject> result = new ArrayList<MavenProject>();
+        List<MavenProject> result = new ArrayList<>();
 
         for ( MavenProject mavenProject : sortedProjects )
         {
@@ -351,14 +352,14 @@ public class ReactorModuleConvergence
             List<Dependency> list = result.get( project );
             if ( list == null )
             {
-                list = new ArrayList<Dependency>();
+                list = new ArrayList<>();
             }
             list.add( dependency );
             result.put( project, list );
         }
         else
         {
-            List<Dependency> list = new ArrayList<Dependency>();
+            List<Dependency> list = new ArrayList<>();
             list.add( dependency );
             result.put( project, list );
         }
@@ -378,7 +379,7 @@ public class ReactorModuleConvergence
                                                                                                  List<MavenProject> sortedProjects )
     // CHECKSTYLE_ON: LineLength
     {
-        Map<MavenProject, List<Dependency>> result = new HashMap<MavenProject, List<Dependency>>();
+        Map<MavenProject, List<Dependency>> result = new HashMap<>();
         for ( MavenProject mavenProject : sortedProjects )
         {
             logger.debug( "Project: " + mavenProject.getId() );
@@ -423,7 +424,7 @@ public class ReactorModuleConvergence
      */
     private List<MavenProject> isReactorVersionConsistent( List<MavenProject> projectList )
     {
-        List<MavenProject> result = new ArrayList<MavenProject>();
+        List<MavenProject> result = new ArrayList<>();
 
         if ( projectList != null && !projectList.isEmpty() )
         {
@@ -471,7 +472,7 @@ public class ReactorModuleConvergence
         if ( !StringUtils.isEmpty( getMessage() ) )
         {
             sb.append( getMessage() );
-            sb.append( SystemUtils.LINE_SEPARATOR );
+            sb.append( System.lineSeparator() );
         }
     }
 

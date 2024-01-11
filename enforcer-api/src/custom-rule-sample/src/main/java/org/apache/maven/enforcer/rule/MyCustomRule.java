@@ -19,12 +19,11 @@ package org.apache.maven.enforcer.rule;
  * under the License.
  */
 
-import org.apache.maven.artifact.resolver.ArtifactResolver;
+import org.apache.maven.ProjectDependenciesResolver;
 import org.apache.maven.enforcer.rule.api.EnforcerRule;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleException;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleHelper;
 import org.apache.maven.execution.MavenSession;
-import org.apache.maven.execution.RuntimeInformation;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.component.configurator.expression.ExpressionEvaluationException;
@@ -32,12 +31,13 @@ import org.codehaus.plexus.component.repository.exception.ComponentLookupExcepti
 
 /**
  * @author <a href="mailto:brianf@apache.org">Brian Fox</a>
+ * @author <a href="mailto:belingueres@gmail.com">Gabriel Belingueres</a>
  */
 public class MyCustomRule
     implements EnforcerRule
 {
     /**
-     * Simple param. This rule will fail if the value is true.
+     * Simple param. This rule fails if the value is true.
      */
     private boolean shouldIfail = false;
 
@@ -53,15 +53,15 @@ public class MyCustomRule
             MavenSession session = (MavenSession) helper.evaluate( "${session}" );
             String target = (String) helper.evaluate( "${project.build.directory}" );
             String artifactId = (String) helper.evaluate( "${project.artifactId}" );
+            String mavenVersion = (String) helper.evaluate( "${maven.version}" );
 
-            // retreive any component out of the session directly
-            ArtifactResolver resolver = (ArtifactResolver) helper.getComponent( ArtifactResolver.class );
-            RuntimeInformation rti = (RuntimeInformation) helper.getComponent( RuntimeInformation.class );
+            // retrieve any component out of the session directly
+            ProjectDependenciesResolver resolver = helper.getComponent( ProjectDependenciesResolver.class );
 
             log.info( "Retrieved Target Folder: " + target );
             log.info( "Retrieved ArtifactId: " +artifactId );
             log.info( "Retrieved Project: " + project );
-            log.info( "Retrieved RuntimeInfo: " + rti );
+            log.info( "Retrieved Maven version: " + mavenVersion );
             log.info( "Retrieved Session: " + session );
             log.info( "Retrieved Resolver: " + resolver );
 
@@ -92,7 +92,7 @@ public class MyCustomRule
     public String getCacheId()
     {
         //no hash on boolean...only parameter so no hash is needed.
-        return ""+this.shouldIfail;
+        return Boolean.toString( this.shouldIfail );
     }
 
     /**
@@ -113,8 +113,19 @@ public class MyCustomRule
      * by the helper need to be queried. You may for example, store certain objects in your rule
      * and then query them later.
      */
-    public boolean isResultValid( EnforcerRule arg0 )
+    public boolean isResultValid( EnforcerRule rule )
     {
         return false;
     }
+
+    /**
+     * Injects the value of the shouldIfail parameter into the custom rule.
+     * 
+     * @param shouldIfail set to true if you want the rule to fail. false to succeed.
+     */
+    public void setShouldIfail( boolean shouldIfail )
+    {
+        this.shouldIfail = shouldIfail;
+    }
+
 }

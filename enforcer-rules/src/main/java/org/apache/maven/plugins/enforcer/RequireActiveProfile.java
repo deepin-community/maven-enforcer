@@ -21,10 +21,10 @@ package org.apache.maven.plugins.enforcer;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.maven.enforcer.rule.api.EnforcerRuleException;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleHelper;
-import org.apache.maven.model.Profile;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.component.configurator.expression.ExpressionEvaluationException;
 import org.codehaus.plexus.util.StringUtils;
@@ -76,25 +76,25 @@ public class RequireActiveProfile
     public void execute( EnforcerRuleHelper theHelper )
         throws EnforcerRuleException
     {
-        List<String> missingProfiles = new ArrayList<String>();
+        List<String> missingProfiles = new ArrayList<>();
         try
         {
             MavenProject project = (MavenProject) theHelper.evaluate( "${project}" );
             if ( StringUtils.isNotEmpty( profiles ) )
             {
-                String[] profs = profiles.split( "," );
-                for ( String profile : profs )
+                String[] profileIds = profiles.split( "," );
+                for ( String profileId : profileIds )
                 {
-                    if ( !isProfileActive( project, profile ) )
+                    if ( !isProfileActive( project, profileId ) )
                     {
-                        missingProfiles.add( profile );
+                        missingProfiles.add( profileId );
                     }
                 }
 
                 boolean fail = false;
                 if ( !missingProfiles.isEmpty() )
                 {
-                    if ( all || missingProfiles.size() == profs.length )
+                    if ( all || missingProfiles.size() == profileIds.length )
                     {
                       fail = true;
                     }
@@ -106,12 +106,12 @@ public class RequireActiveProfile
                     StringBuilder buf = new StringBuilder();
                     if ( message != null )
                     {
-                        buf.append( message + "\n" );
+                        buf.append( message + System.lineSeparator() );
                     }
 
                     for ( String profile : missingProfiles )
                     {
-                        buf.append( "Profile \"" + profile + "\" is not activated.\n" );
+                        buf.append( "Profile \"" + profile + "\" is not activated." + System.lineSeparator() );
                     }
 
                     throw new EnforcerRuleException( buf.toString() );
@@ -131,23 +131,18 @@ public class RequireActiveProfile
      * Checks if profile is active.
      *
      * @param project the project
-     * @param profileName the profile name
+     * @param profileId the profile name
      * @return <code>true</code> if profile is active, otherwise <code>false</code>
      */
-    protected boolean isProfileActive( MavenProject project, String profileName )
+    protected boolean isProfileActive( MavenProject project, String profileId )
     {
-        List<Profile> activeProfiles = project.getActiveProfiles();
-        if ( activeProfiles != null && !activeProfiles.isEmpty() )
+        for ( Map.Entry<String, List<String>> entry : project.getInjectedProfileIds().entrySet() )
         {
-            for ( Profile profile : activeProfiles )
+            if ( entry.getValue().contains( profileId ) )
             {
-                if ( profile.getId().equals( profileName ) )
-                {
-                    return true;
-                }
+                return true;
             }
         }
-
         return false;
     }
 }

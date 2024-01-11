@@ -19,10 +19,11 @@ package org.apache.maven.plugins.enforcer;
  * under the License.
  */
 
-import junit.framework.TestCase;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import org.apache.maven.enforcer.rule.api.EnforcerRuleException;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleHelper;
+import org.junit.jupiter.api.Test;
 
 /**
  * The Class TestRequireProperty.
@@ -30,16 +31,14 @@ import org.apache.maven.enforcer.rule.api.EnforcerRuleHelper;
  * @author Paul Gier
  */
 public class TestRequireProperty
-    extends TestCase
 {
 
     /**
      * Test rule.
      *
-     * @throws EnforcerRuleException the enforcer rule exception
      */
+    @Test
     public void testRule()
-        throws EnforcerRuleException
     {
         MockProject project = new MockProject();
         project.setProperty( "testProp", "This is a test." );
@@ -75,10 +74,9 @@ public class TestRequireProperty
     /**
      * Test rule with regex.
      *
-     * @throws EnforcerRuleException the enforcer rule exception
      */
+    @Test
     public void testRuleWithRegex()
-        throws EnforcerRuleException
     {
         MockProject project = new MockProject();
         project.setProperty( "testProp", "This is a test." );
@@ -115,6 +113,7 @@ public class TestRequireProperty
     /**
      * Test id.
      */
+    @Test
     public void testId()
     {
         RequireProperty rule = new RequireProperty();

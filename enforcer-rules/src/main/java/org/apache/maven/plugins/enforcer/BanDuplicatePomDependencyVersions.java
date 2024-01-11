@@ -19,8 +19,7 @@ package org.apache.maven.plugins.enforcer;
  * under the License.
  */
 
-import java.io.FileNotFoundException;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,7 +35,6 @@ import org.apache.maven.model.Profile;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.component.configurator.expression.ExpressionEvaluationException;
-import org.codehaus.plexus.util.IOUtil;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
 /**
@@ -66,29 +64,15 @@ public class BanDuplicatePomDependencyVersions
 
         // re-read model, because M3 uses optimized model
         MavenXpp3Reader modelReader = new MavenXpp3Reader();
-        FileReader pomReader = null;
-        Model model;
-        try
-        {
-            pomReader = new FileReader( project.getFile() );
 
-            model = modelReader.read( pomReader );
+        Model model;
+        try ( FileInputStream pomInputStream = new FileInputStream( project.getFile() ) )
+        {
+            model = modelReader.read( pomInputStream, false );
         }
-        catch ( FileNotFoundException e )
+        catch ( IOException | XmlPullParserException e )
         {
             throw new EnforcerRuleException( "Unable to retrieve the MavenProject: ", e );
-        }
-        catch ( IOException e )
-        {
-            throw new EnforcerRuleException( "Unable to retrieve the MavenProject: ", e );
-        }
-        catch ( XmlPullParserException e )
-        {
-            throw new EnforcerRuleException( "Unable to retrieve the MavenProject: ", e );
-        }
-        finally
-        {
-            IOUtil.close( pomReader );
         }
 
         // @todo reuse ModelValidator when possible
@@ -125,7 +109,7 @@ public class BanDuplicatePomDependencyVersions
 
         if ( model.getDependencyManagement() != null )
         {
-            List<Dependency> managementDependencies = model.getDependencies();
+            List<Dependency> managementDependencies = model.getDependencyManagement().getDependencies();
             Map<String, Integer> duplicateManagementDependencies = validateDependencies( managementDependencies );
             duplicates += duplicateManagementDependencies.size();
 
@@ -144,9 +128,9 @@ public class BanDuplicatePomDependencyVersions
             messageBuilder( duplicateProfileDependencies, "profiles.profile[" + profile.getId()
                 + "].dependencies.dependency", summary );
 
-            if ( model.getDependencyManagement() != null )
+            if ( profile.getDependencyManagement() != null )
             {
-                List<Dependency> profileManagementDependencies = profile.getDependencies();
+                List<Dependency> profileManagementDependencies = profile.getDependencyManagement().getDependencies();
 
                 Map<String, Integer> duplicateProfileManagementDependencies =
                     validateDependencies( profileManagementDependencies );
@@ -165,7 +149,7 @@ public class BanDuplicatePomDependencyVersions
                 .append( duplicates )
                 .append( " duplicate dependency " );
             message.append( duplicateDependencies.size() == 1 ? "declaration" : "declarations" )
-                .append( " in this project:\n" );
+                .append( " in this project:" + System.lineSeparator() );
             message.append( summary );
             throw new EnforcerRuleException( message.toString() );
         }
@@ -183,7 +167,7 @@ public class BanDuplicatePomDependencyVersions
                     .append( entry.getKey() )
                     .append( "] ( " )
                     .append( entry.getValue() )
-                    .append( " times )\n" );
+                    .append( " times )" + System.lineSeparator() );
             }
         }
     }
@@ -191,8 +175,8 @@ public class BanDuplicatePomDependencyVersions
     private Map<String, Integer> validateDependencies( List<Dependency> dependencies )
         throws EnforcerRuleException
     {
-        Map<String, Integer> duplicateDeps = new HashMap<String, Integer>();
-        Set<String> deps = new HashSet<String>();
+        Map<String, Integer> duplicateDeps = new HashMap<>();
+        Set<String> deps = new HashSet<>();
         for ( Dependency dependency : dependencies )
         {
             String key = dependency.getManagementKey();

@@ -21,7 +21,10 @@ package org.apache.maven.plugins.enforcer.utils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
+import org.apache.maven.model.InputLocation;
+import org.apache.maven.model.InputLocationTracker;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.model.ReportPlugin;
 
@@ -31,54 +34,102 @@ import org.apache.maven.model.ReportPlugin;
  */
 public class PluginWrapper
 {
-    private String groupId;
+    private final String groupId;
 
-    private String artifactId;
+    private final String artifactId;
 
-    private String version;
+    private final String version;
 
-    private String source;
+    private final InputLocationTracker locationTracker;
 
-    public static List<PluginWrapper> addAll( List<?> plugins, String source )
+    public static List<PluginWrapper> addAll( List<? extends InputLocationTracker> plugins, boolean banMavenDefaults )
     {
         List<PluginWrapper> results = null;
 
         if ( !plugins.isEmpty() )
         {
-            results = new ArrayList<PluginWrapper>( plugins.size() );
-            for ( Object o : plugins )
+            results = new ArrayList<>( plugins.size() );
+            for ( InputLocationTracker o : plugins )
             {
+                // null or true means it is most assumed a Maven default
+                if ( banMavenDefaults && ( isVersionFromDefaultLifecycleBindings( o ).orElse( true )
+                    || isVersionFromSuperpom( o ).orElse( true ) ) )
+                {
+                    continue;
+                }
+
                 if ( o instanceof Plugin )
                 {
-                    results.add( new PluginWrapper( (Plugin) o, source ) );
+                    results.add( new PluginWrapper( (Plugin) o ) );
                 }
                 else
                 {
                     if ( o instanceof ReportPlugin )
                     {
-                        results.add( new PluginWrapper( (ReportPlugin) o, source ) );
+                        results.add( new PluginWrapper( (ReportPlugin) o ) );
                     }
                 }
-
             }
         }
         return results;
     }
-
-    public PluginWrapper( Plugin plugin, String source )
+    
+    /**
+     * Whether the version is coming from the default lifecycle bindings.
+     * Cannot be determined before Maven 3.6.1
+     * 
+     * @param o either Plugin or ReportPlugin
+     * @return null if untraceable, otherwise its matching value
+     * @see <a href="https://issues.apache.org/jira/browse/MNG-6600">MNG-6600</a>
+     */
+    public static Optional<Boolean> isVersionFromDefaultLifecycleBindings( InputLocationTracker o )
     {
-        setGroupId( plugin.getGroupId() );
-        setArtifactId( plugin.getArtifactId() );
-        setVersion( plugin.getVersion() );
-        setSource( source );
+        InputLocation versionLocation = o.getLocation( "version" );
+        if ( versionLocation == null )
+        {
+            return Optional.empty();
+        }
+
+        String modelId = versionLocation.getSource().getModelId();
+        return Optional.of( modelId.startsWith( "org.apache.maven:maven-core:" )
+                            && modelId.endsWith( ":default-lifecycle-bindings" ) );
     }
 
-    public PluginWrapper( ReportPlugin plugin, String source )
+    /**
+     * Whether the version is coming from the super POM.
+     * Cannot be determined before Maven 3.6.1
+     * 
+     * @param o either Plugin or ReportPlugin
+     * @return null if untraceable, otherwise its matching value
+     * @see <a href="https://issues.apache.org/jira/browse/MNG-6593">MNG-6593</a>
+     */
+    public static Optional<Boolean> isVersionFromSuperpom( InputLocationTracker o )
     {
-        setGroupId( plugin.getGroupId() );
-        setArtifactId( plugin.getArtifactId() );
-        setVersion( plugin.getVersion() );
-        setSource( source );
+        InputLocation versionLocation = o.getLocation( "version" );
+        if ( versionLocation == null )
+        {
+            return Optional.empty();
+        }
+        
+        String modelId = versionLocation.getSource().getModelId();
+        return Optional.of( modelId.startsWith( "org.apache.maven:maven-model-builder:" )
+            && modelId.endsWith( ":super-pom" ) );
+    }
+
+    private PluginWrapper( Plugin plugin )
+    {
+        this.groupId = plugin.getGroupId();
+        this.artifactId = plugin.getArtifactId();
+        this.version = plugin.getVersion();
+        this.locationTracker = plugin;
+    }
+
+    private PluginWrapper( ReportPlugin plugin )
+    {
+        this.groupId = plugin.getGroupId();
+        this.artifactId = plugin.getArtifactId();
+        this.version = plugin.getVersion();
+        this.locationTracker = plugin;
     }
 
     public String getGroupId()
@@ -86,19 +137,9 @@ public class PluginWrapper
         return groupId;
     }
 
-    public void setGroupId( String groupId )
-    {
-        this.groupId = groupId;
-    }
-
     public String getArtifactId()
     {
         return artifactId;
-    }
-
-    public void setArtifactId( String artifactId )
-    {
-        this.artifactId = artifactId;
     }
 
     public String getVersion()
@@ -106,18 +147,18 @@ public class PluginWrapper
         return version;
     }
 
-    public void setVersion( String version )
-    {
-        this.version = version;
-    }
-
     public String getSource()
     {
-        return source;
-    }
-
-    public void setSource( String source )
-    {
-        this.source = source;
+        InputLocation inputLocation = locationTracker.getLocation( "version" );
+        
+        if ( inputLocation == null )
+        {
+            // most likely super-pom or default-lifecycle-bindings in Maven 3.6.0 or before (MNG-6593 / MNG-6600)
+            return "unknown";
+        }
+        else
+        {
+            return inputLocation.getSource().getLocation();
+        }
     }
 }

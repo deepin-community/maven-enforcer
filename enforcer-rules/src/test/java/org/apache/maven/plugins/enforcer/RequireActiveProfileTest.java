@@ -19,21 +19,22 @@ package org.apache.maven.plugins.enforcer;
  * under the License.
  */
 
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.maven.enforcer.rule.api.EnforcerRuleException;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleHelper;
-import org.apache.maven.model.Profile;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.component.configurator.expression.ExpressionEvaluationException;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 /**
  * Check the profile rule.
@@ -48,7 +49,7 @@ public class RequireActiveProfileTest
 
     private RequireActiveProfile rule;
 
-    @Before
+    @BeforeEach
     public void before()
         throws ExpressionEvaluationException
     {
@@ -62,49 +63,50 @@ public class RequireActiveProfileTest
     public void testNoActiveProfilesInProjectAndNoProfilesExpectedToBeActivated()
         throws EnforcerRuleException
     {
-        when( project.getActiveProfiles() ).thenReturn( Collections.<Profile> emptyList() );
+        when( project.getInjectedProfileIds() ).thenReturn( Collections.emptyMap() );
 
         rule.execute( helper );
-
-        assertTrue( true );
     }
 
     @Test
     public void testActiveProfileAndExpectedActiveProfile()
         throws EnforcerRuleException
     {
-        List<Profile> profiles = Collections.<Profile> singletonList( createProfile( "profile-2" ) );
+        Map<String, List<String>> profiles = Collections.singletonMap( "pom", Arrays.asList( "profile-2" ) );
 
-        when( project.getActiveProfiles() ).thenReturn( profiles );
+        when( project.getInjectedProfileIds() ).thenReturn( profiles );
 
         rule.setProfiles( "profile-2" );
 
         rule.execute( helper );
-        assertTrue( true );
     }
 
-    @Test( expected = EnforcerRuleException.class )
+    @Test
     public void testNoActiveProfileButTheRuleRequestedAnActiveProfile()
-        throws EnforcerRuleException
     {
-        when( project.getActiveProfiles() ).thenReturn( Collections.<Profile> emptyList() );
+        assertThrows( EnforcerRuleException.class, () -> {
+            when( project.getInjectedProfileIds() ).thenReturn( Collections.emptyMap() );
 
-        rule.setProfiles( "profile-2" );
+            rule.setProfiles( "profile-2" );
 
-        rule.execute( helper );
+            rule.execute( helper );
+            // intentionally no assertTrue(...)
+        } );
         // intentionally no assertTrue(...)
     }
 
-    @Test( expected = EnforcerRuleException.class )
+    @Test
     public void testNoActiveProfileButWeExpectToGetAnExceptionWithAll()
-        throws EnforcerRuleException
     {
-        when( project.getActiveProfiles() ).thenReturn( Collections.<Profile> emptyList() );
+        assertThrows( EnforcerRuleException.class, () -> {
+            when( project.getInjectedProfileIds() ).thenReturn( Collections.emptyMap() );
 
-        rule.setProfiles( "profile-2" );
-        rule.setAll( true );
+            rule.setProfiles( "profile-2" );
+            rule.setAll( true );
 
-        rule.execute( helper );
+            rule.execute( helper );
+            // intentionally no assertTrue(...)
+        } );
         // intentionally no assertTrue(...)
     }
 
@@ -112,69 +114,73 @@ public class RequireActiveProfileTest
     public void testTwoActiveProfilesWithOneRequiredProfile()
         throws EnforcerRuleException
     {
-        List<Profile> profiles = Arrays.asList( createProfile( "profile-1" ), createProfile( "profile-2" ) );
+        Map<String, List<String>> profiles =
+            Collections.singletonMap( "pom", Arrays.asList( "profile-1", "profile-2" ) );
 
-        when( project.getActiveProfiles() ).thenReturn( profiles );
+        when( project.getInjectedProfileIds() ).thenReturn( profiles );
 
         rule.setProfiles( "profile-2" );
 
         rule.execute( helper );
-        assertTrue( true );
     }
 
     @Test
     public void testTwoActiveProfilesWhereOneProfileIsRequiredToBeActivated()
         throws EnforcerRuleException
     {
-        List<Profile> profiles = Arrays.asList( createProfile( "profile-1" ), createProfile( "profile-2" ) );
+        Map<String, List<String>> profiles =
+            Collections.singletonMap( "pom", Arrays.asList( "profile-1", "profile-2" ) );
 
-        when( project.getActiveProfiles() ).thenReturn( profiles );
+        when( project.getInjectedProfileIds() ).thenReturn( profiles );
 
         rule.setProfiles( "profile-2" );
         rule.setAll( true );
 
         rule.execute( helper );
-        assertTrue( true );
     }
 
-    @Test( expected = EnforcerRuleException.class )
+    @Test
     public void testTwoActiveProfilesWithTwoRequiredProfilesWhereOneOfThemIsNotPartOfTheActiveProfiles()
-        throws EnforcerRuleException, ExpressionEvaluationException
     {
+        assertThrows( EnforcerRuleException.class, () -> {
+            Map<String, List<String>> profiles =
+                Collections.singletonMap( "pom", Arrays.asList( "profile-X", "profile-Y" ) );
 
-        List<Profile> profiles = Arrays.asList( createProfile( "profile-X" ), createProfile( "profile-Y" ) );
+            when( project.getInjectedProfileIds() ).thenReturn( profiles );
 
-        when( project.getActiveProfiles() ).thenReturn( profiles );
+            rule.setProfiles( "profile-Z,profile-X" );
+            rule.setAll( true );
 
-        rule.setProfiles( "profile-Z,profile-X" );
-        rule.setAll( true );
-
-        rule.execute( helper );
+            rule.execute( helper );
+            // intentionally no assertTrue(..)
+        } );
         // intentionally no assertTrue(..)
     }
 
-    @Test( expected = EnforcerRuleException.class )
+    @Test
     public void testOneActiveProfilesWithTwoRequiredProfiles()
-        throws EnforcerRuleException, ExpressionEvaluationException
     {
-        List<Profile> profiles = Collections.singletonList( createProfile( "profile-X" ) );
+        assertThrows( EnforcerRuleException.class, () -> {
+            Map<String, List<String>> profiles = Collections.singletonMap( "pom", Arrays.asList( "profile-X" ) );
 
-        when( project.getActiveProfiles() ).thenReturn( profiles );
+            when( project.getInjectedProfileIds() ).thenReturn( profiles );
 
-        rule.setProfiles( "profile-X,profile-Y" );
-        rule.setAll( true );
+            rule.setProfiles( "profile-X,profile-Y" );
+            rule.setAll( true );
 
-        rule.execute( helper );
+            rule.execute( helper );
+            // intentionally no assertTrue(..)
+        } );
         // intentionally no assertTrue(..)
     }
 
     @Test
     public void testOneActiveProfileWithTwoProfilesButNotAll()
-        throws EnforcerRuleException, ExpressionEvaluationException
+        throws EnforcerRuleException
     {
-        List<Profile> profiles = Collections.singletonList( createProfile( "profile-X" ) );
+        Map<String, List<String>> profiles = Collections.singletonMap( "pom", Arrays.asList( "profile-X" ) );
 
-        when( project.getActiveProfiles() ).thenReturn( profiles );
+        when( project.getInjectedProfileIds() ).thenReturn( profiles );
 
         rule.setProfiles( "profile-X,profile-Y" );
         rule.setAll( false );
@@ -182,12 +188,4 @@ public class RequireActiveProfileTest
         rule.execute( helper );
         // intentionally no assertTrue(..)
     }
-
-    private Profile createProfile( String profileId )
-    {
-        Profile p = new Profile();
-        p.setId( profileId );
-        return p;
-    }
-
 }

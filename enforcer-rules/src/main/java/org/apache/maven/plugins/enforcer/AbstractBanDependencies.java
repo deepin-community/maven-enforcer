@@ -22,13 +22,18 @@ package org.apache.maven.plugins.enforcer;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleException;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleHelper;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.logging.Log;
+import org.apache.maven.plugins.enforcer.utils.ArtifactUtils;
+import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.project.ProjectBuildingRequest;
 import org.apache.maven.shared.dependency.graph.DependencyGraphBuilder;
 import org.apache.maven.shared.dependency.graph.DependencyGraphBuilderException;
 import org.apache.maven.shared.dependency.graph.DependencyNode;
 import org.codehaus.plexus.component.configurator.expression.ExpressionEvaluationException;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -36,7 +41,6 @@ import java.util.Set;
  * Abstract Rule for banning dependencies.
  *
  * @author <a href="mailto:brianf@apache.org">Brian Fox</a>
- * @version $Id$
  */
 public abstract class AbstractBanDependencies
     extends AbstractNonCacheableEnforcerRule
@@ -51,9 +55,7 @@ public abstract class AbstractBanDependencies
     public void execute( EnforcerRuleHelper helper )
         throws EnforcerRuleException
     {
-
-        // get the project
-        MavenProject project = null;
+        MavenProject project;
         try
         {
             project = (MavenProject) helper.evaluate( "${project}" );
@@ -63,27 +65,31 @@ public abstract class AbstractBanDependencies
             throw new EnforcerRuleException( "Unable to retrieve the MavenProject: ", eee );
         }
 
+        MavenSession session;
         try
         {
-            graphBuilder = (DependencyGraphBuilder) helper.getComponent( DependencyGraphBuilder.class );
+            session = (MavenSession) helper.evaluate( "${session}" );
+        }
+        catch ( ExpressionEvaluationException eee )
+        {
+            throw new EnforcerRuleException( "Unable to retrieve the reactor MavenProject: ", eee );
+        }
+
+        try
+        {
+            graphBuilder = helper.getComponent( DependencyGraphBuilder.class );
         }
         catch ( ComponentLookupException e )
         {
-            // real cause is probably that one of the Maven3 graph builder could not be initiated and fails with a
-            // ClassNotFoundException
-            try
-            {
-                graphBuilder =
-                    (DependencyGraphBuilder) helper.getComponent( DependencyGraphBuilder.class.getName(), "maven2" );
-            }
-            catch ( ComponentLookupException e1 )
-            {
-                throw new EnforcerRuleException( "Unable to lookup DependencyGraphBuilder: ", e );
-            }
+            throw new EnforcerRuleException( "Unable to lookup DependencyGraphBuilder: ", e );
         }
+        
+        ProjectBuildingRequest buildingRequest =
+            new DefaultProjectBuildingRequest( session.getProjectBuildingRequest() );
+        buildingRequest.setProject( project );
 
         // get the correct list of dependencies
-        Set<Artifact> dependencies = getDependenciesToCheck( project );
+        Set<Artifact> dependencies = getDependenciesToCheck( helper, buildingRequest );
 
         // look for banned dependencies
         Set<Artifact> foundExcludes = checkDependencies( dependencies, helper.getLog() );
@@ -96,7 +102,7 @@ public abstract class AbstractBanDependencies
             StringBuilder buf = new StringBuilder();
             if ( message != null )
             {
-                buf.append( message + "\n" );
+                buf.append( message + System.lineSeparator() );
             }
             for ( Artifact artifact : foundExcludes )
             {
@@ -111,22 +117,34 @@ public abstract class AbstractBanDependencies
 
     protected CharSequence getErrorMessage( Artifact artifact )
     {
-        return "Found Banned Dependency: " + artifact.getId() + "\n";
+        return "Found Banned Dependency: " + artifact.getId() + System.lineSeparator();
     }
 
-    protected Set<Artifact> getDependenciesToCheck( MavenProject project )
+    private Set<Artifact> getDependenciesToCheck( EnforcerRuleHelper helper,
+            ProjectBuildingRequest buildingRequest )
+    {
+        String cacheKey = buildingRequest.getProject().getId() + "_" + searchTransitive;
+
+        // check in the cache
+        Set<Artifact> dependencies =
+                (Set<Artifact>) helper.getCache( cacheKey, () -> getDependenciesToCheck( buildingRequest ) );
+
+        return dependencies;
+    }
+
+    protected Set<Artifact> getDependenciesToCheck( ProjectBuildingRequest buildingRequest )
     {
         Set<Artifact> dependencies = null;
         try
         {
-            DependencyNode node = graphBuilder.buildDependencyGraph( project, null );
+            DependencyNode node = graphBuilder.buildDependencyGraph( buildingRequest, null );
             if ( searchTransitive )
             {
-                dependencies = getAllDescendants( node );
+                dependencies = ArtifactUtils.getAllDescendants( node );
             }
             else if ( node.getChildren() != null )
             {
-                dependencies = new HashSet<Artifact>();
+                dependencies = new HashSet<>();
                 for ( DependencyNode depNode : node.getChildren() )
                 {
                     dependencies.add( depNode.getArtifact() );
@@ -139,25 +157,6 @@ public abstract class AbstractBanDependencies
             throw new RuntimeException( e );
         }
         return dependencies;
-    }
-
-    private Set<Artifact> getAllDescendants( DependencyNode node )
-    {
-        Set<Artifact> children = null;
-        if ( node.getChildren() != null )
-        {
-            children = new HashSet<Artifact>();
-            for ( DependencyNode depNode : node.getChildren() )
-            {
-                children.add( depNode.getArtifact() );
-                Set<Artifact> subNodes = getAllDescendants( depNode );
-                if ( subNodes != null )
-                {
-                    children.addAll( subNodes );
-                }
-            }
-        }
-        return children;
     }
 
     /**

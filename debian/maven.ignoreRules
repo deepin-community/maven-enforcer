@@ -9,4 +9,5 @@ org.codehaus.mojo cobertura-maven-plugin * *
 org.apache.maven.plugin-testing maven-plugin-testing-harness jar * *
 org.assertj assertj-core
 org.mockito mockito-core jar * *
+org.mockito mockito-junit-jupiter
 org.apache.rat apache-rat-plugin * * *

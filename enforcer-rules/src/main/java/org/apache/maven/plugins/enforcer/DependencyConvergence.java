@@ -24,20 +24,20 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.maven.artifact.Artifact;
-import org.apache.maven.artifact.factory.ArtifactFactory;
-import org.apache.maven.artifact.metadata.ArtifactMetadataSource;
 import org.apache.maven.artifact.repository.ArtifactRepository;
-import org.apache.maven.artifact.resolver.ArtifactCollector;
 import org.apache.maven.artifact.resolver.filter.ArtifactFilter;
 import org.apache.maven.enforcer.rule.api.EnforcerRule;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleException;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleHelper;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.enforcer.utils.DependencyVersionMap;
+import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.shared.dependency.tree.DependencyNode;
-import org.apache.maven.shared.dependency.tree.DependencyTreeBuilder;
-import org.apache.maven.shared.dependency.tree.DependencyTreeBuilderException;
+import org.apache.maven.project.ProjectBuildingRequest;
+import org.apache.maven.shared.dependency.graph.DependencyCollectorBuilder;
+import org.apache.maven.shared.dependency.graph.DependencyCollectorBuilderException;
+import org.apache.maven.shared.dependency.graph.DependencyNode;
 import org.codehaus.plexus.component.configurator.expression.ExpressionEvaluationException;
 import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
 
@@ -47,7 +47,6 @@ import org.codehaus.plexus.component.repository.exception.ComponentLookupExcepti
 public class DependencyConvergence
     implements EnforcerRule
 {
-
     private static Log log;
 
     private boolean uniqueVersions;
@@ -75,27 +74,26 @@ public class DependencyConvergence
         try
         {
             MavenProject project = (MavenProject) helper.evaluate( "${project}" );
-            DependencyTreeBuilder dependencyTreeBuilder =
-                (DependencyTreeBuilder) helper.getComponent( DependencyTreeBuilder.class );
+            MavenSession session = (MavenSession) helper.evaluate( "${session}" );
+            DependencyCollectorBuilder dependencyCollectorBuilder =
+                helper.getComponent( DependencyCollectorBuilder.class );
             ArtifactRepository repository = (ArtifactRepository) helper.evaluate( "${localRepository}" );
-            ArtifactFactory factory = (ArtifactFactory) helper.getComponent( ArtifactFactory.class );
-            ArtifactMetadataSource metadataSource =
-                (ArtifactMetadataSource) helper.getComponent( ArtifactMetadataSource.class );
-            ArtifactCollector collector = (ArtifactCollector) helper.getComponent( ArtifactCollector.class );
-            ArtifactFilter filter = null; // we need to evaluate all scopes
-            DependencyNode node = dependencyTreeBuilder.buildDependencyTree( project, repository, factory,
-                                                                             metadataSource, filter, collector );
-            return node;
+
+            ProjectBuildingRequest buildingRequest =
+                new DefaultProjectBuildingRequest( session.getProjectBuildingRequest() );
+            buildingRequest.setProject( project );
+            buildingRequest.setLocalRepository( repository );
+            ArtifactFilter filter = ( Artifact a ) -> ( "compile".equalsIgnoreCase( a.getScope () )
+                    || "runtime".equalsIgnoreCase( a.getScope () ) )
+                    && !a.isOptional();
+
+            return dependencyCollectorBuilder.collectDependencyGraph( buildingRequest, filter );
         }
-        catch ( ExpressionEvaluationException e )
-        {
-            throw new EnforcerRuleException( "Unable to lookup an expression " + e.getLocalizedMessage(), e );
-        }
-        catch ( ComponentLookupException e )
+        catch ( ExpressionEvaluationException | ComponentLookupException e )
         {
             throw new EnforcerRuleException( "Unable to lookup a component " + e.getLocalizedMessage(), e );
         }
-        catch ( DependencyTreeBuilderException e )
+        catch ( DependencyCollectorBuilderException e )
         {
             throw new EnforcerRuleException( "Could not build dependency tree " + e.getLocalizedMessage(), e );
         }
@@ -115,7 +113,7 @@ public class DependencyConvergence
             DependencyVersionMap visitor = new DependencyVersionMap( log );
             visitor.setUniqueVersions( uniqueVersions );
             node.accept( visitor );
-            List<CharSequence> errorMsgs = new ArrayList<CharSequence>();
+            List<CharSequence> errorMsgs = new ArrayList<>();
             errorMsgs.addAll( getConvergenceErrorMsgs( visitor.getConflictedVersionNumbers() ) );
             for ( CharSequence errorMsg : errorMsgs )
             {
@@ -133,18 +131,13 @@ public class DependencyConvergence
         }
     }
 
-    private String getFullArtifactName( Artifact artifact )
-    {
-        return artifact.getGroupId() + ":" + artifact.getArtifactId() + ":" + artifact.getVersion();
-    }
-
     private StringBuilder buildTreeString( DependencyNode node )
     {
-        List<String> loc = new ArrayList<String>();
+        List<String> loc = new ArrayList<>();
         DependencyNode currentNode = node;
         while ( currentNode != null )
         {
-            loc.add( getFullArtifactName( currentNode.getArtifact() ) );
+            loc.add( currentNode.getArtifact().toString() );
             currentNode = currentNode.getParent();
         }
         Collections.reverse( loc );
@@ -156,14 +149,14 @@ public class DependencyConvergence
                 builder.append( "  " );
             }
             builder.append( "+-" + loc.get( i ) );
-            builder.append( "\n" );
+            builder.append( System.lineSeparator() );
         }
         return builder;
     }
 
     private List<String> getConvergenceErrorMsgs( List<List<DependencyNode>> errors )
     {
-        List<String> errorMsgs = new ArrayList<String>();
+        List<String> errorMsgs = new ArrayList<>();
         for ( List<DependencyNode> nodeList : errors )
         {
             errorMsgs.add( buildConvergenceErrorMsg( nodeList ) );
@@ -174,15 +167,16 @@ public class DependencyConvergence
     private String buildConvergenceErrorMsg( List<DependencyNode> nodeList )
     {
         StringBuilder builder = new StringBuilder();
-        builder.append( "\nDependency convergence error for " + getFullArtifactName( nodeList.get( 0 ).getArtifact() )
-            + " paths to dependency are:\n" );
+        builder.append( System.lineSeparator() + "Dependency convergence error for "
+            + nodeList.get( 0 ).getArtifact().toString()
+            + " paths to dependency are:" + System.lineSeparator() );
         if ( nodeList.size() > 0 )
         {
             builder.append( buildTreeString( nodeList.get( 0 ) ) );
         }
         for ( DependencyNode node : nodeList.subList( 1, nodeList.size() ) )
         {
-            builder.append( "and\n" );
+            builder.append( "and" + System.lineSeparator() );
             builder.append( buildTreeString( node ) );
         }
         return builder.toString();

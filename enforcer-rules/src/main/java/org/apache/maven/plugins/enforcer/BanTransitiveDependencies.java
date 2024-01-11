@@ -26,8 +26,11 @@ import org.apache.maven.artifact.versioning.InvalidVersionSpecificationException
 import org.apache.maven.enforcer.rule.api.EnforcerRule;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleException;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleHelper;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugins.enforcer.utils.ArtifactMatcher;
+import org.apache.maven.project.DefaultProjectBuildingRequest;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.project.ProjectBuildingRequest;
 import org.apache.maven.shared.dependency.graph.DependencyGraphBuilder;
 import org.apache.maven.shared.dependency.graph.DependencyNode;
 import org.apache.maven.shared.dependency.graph.internal.DefaultDependencyGraphBuilder;
@@ -119,7 +122,7 @@ public class BanTransitiveDependencies
 
             if ( excluded )
             {
-                message.append( " [excluded]\n" );
+                message.append( " [excluded]" + System.lineSeparator() );
             }
 
             if ( hasTransitiveDependencies )
@@ -129,7 +132,7 @@ public class BanTransitiveDependencies
                     message.append( " has transitive dependencies:" );
                 }
 
-                message.append( "\n" ).append( messageFromChildren );
+                message.append( System.lineSeparator() ).append( messageFromChildren );
             }
         }
 
@@ -158,7 +161,13 @@ public class BanTransitiveDependencies
         try
         {
             MavenProject project = (MavenProject) helper.evaluate( "${project}" );
-            rootNode = createDependencyGraphBuilder().buildDependencyGraph( project, null );
+            MavenSession session = (MavenSession) helper.evaluate( "${session}" );
+            
+            ProjectBuildingRequest buildingRequest =
+                new DefaultProjectBuildingRequest( session.getProjectBuildingRequest() );
+            buildingRequest.setProject( project );
+            
+            rootNode = createDependencyGraphBuilder().buildDependencyGraph( buildingRequest, null );
         }
         catch ( Exception e )
         {

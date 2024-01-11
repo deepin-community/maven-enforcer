@@ -36,7 +36,6 @@ import org.codehaus.plexus.personality.plexus.lifecycle.phase.Contextualizable;
  * This goal displays the current platform information.
  *
  * @author <a href="mailto:brianf@apache.org">Brian Fox</a>
- * @version $Id$
  */
 @Mojo( name = "display-info", threadSafe = true )
 public class DisplayInfoMojo
@@ -80,9 +79,11 @@ public class DisplayInfoMojo
     {
         String mavenVersion = session.getSystemProperties().getProperty( "maven.version" );
         String javaVersion = System.getProperty( "java.version" );
+        String javaVendor = System.getProperty( "java.vendor" );
         getLog().info( "Maven Version: " + mavenVersion );
         getLog().info( "JDK Version: " + javaVersion + " normalized as: "
             + RequireJavaVersion.normalizeJDKVersion( javaVersion ) );
+        getLog().info( "Java Vendor: " + javaVendor );
         RequireOS os = new RequireOS();
         os.displayOSInfo( getLog(), true );
     }

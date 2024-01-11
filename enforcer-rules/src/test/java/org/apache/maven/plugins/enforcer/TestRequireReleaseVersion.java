@@ -19,14 +19,16 @@ package org.apache.maven.plugins.enforcer;
  * under the License.
  */
 
-import java.io.IOException;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import junit.framework.TestCase;
+import java.io.IOException;
 
 import org.apache.maven.enforcer.rule.api.EnforcerRule;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleHelper;
 import org.apache.maven.plugin.testing.ArtifactStubFactory;
 import org.apache.maven.plugins.enforcer.utils.EnforcerRuleUtilsHelper;
+import org.junit.jupiter.api.Test;
 
 /**
  * The Class TestRequireReleaseVersion.
@@ -34,7 +36,6 @@ import org.apache.maven.plugins.enforcer.utils.EnforcerRuleUtilsHelper;
  * @author <a href="mailto:brianf@apache.org">Brian Fox</a>
  */
 public class TestRequireReleaseVersion
-    extends TestCase
 {
 
     /**
@@ -42,6 +43,7 @@ public class TestRequireReleaseVersion
      *
      * @throws IOException Signals that an I/O exception has occurred.
      */
+    @Test
     public void testMojo()
         throws IOException
     {
@@ -51,7 +53,7 @@ public class TestRequireReleaseVersion
 
         project.setArtifact( factory.getReleaseArtifact() );
 
-        EnforcerRule rule = new RequireReleaseVersion();
+        RequireReleaseVersion rule = new RequireReleaseVersion();
 
         EnforcerRuleUtilsHelper.execute( rule, helper, false );
 
@@ -64,12 +66,12 @@ public class TestRequireReleaseVersion
         MockProject parent = new MockProject();
         parent.setArtifact( factory.getSnapshotArtifact() );
         project.setParent( parent );
-        helper = EnforcerTestUtils.getHelper(project);
+        helper = EnforcerTestUtils.getHelper( project );
 
-        ( (RequireReleaseVersion) rule ).setFailWhenParentIsSnapshot( true );
+        rule.setFailWhenParentIsSnapshot( true );
         EnforcerRuleUtilsHelper.execute( rule, helper, true );
 
-        ( (RequireReleaseVersion) rule ).setFailWhenParentIsSnapshot( false );
+        rule.setFailWhenParentIsSnapshot( false );
         EnforcerRuleUtilsHelper.execute( rule, helper, false );
 
     }
@@ -77,6 +79,7 @@ public class TestRequireReleaseVersion
     /**
      * Test cache.
      */
+    @Test
     public void testCache()
     {
         EnforcerRule rule = new RequireReleaseVersion();

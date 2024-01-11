@@ -35,7 +35,6 @@ import org.codehaus.plexus.util.StringUtils;
  * This rule checks that the Java version is allowed.
  *
  * @author <a href="mailto:brianf@apache.org">Brian Fox</a>
- * @version $Id$
  */
 public class RequireJavaVersion
     extends AbstractVersionEnforcer
@@ -72,12 +71,12 @@ public class RequireJavaVersion
         theJdkVersion = theJdkVersion.replaceAll( "_|-", "." );
         String tokenArray[] = StringUtils.split( theJdkVersion, "." );
         List<String> tokens = Arrays.asList( tokenArray );
-        StringBuffer buffer = new StringBuffer( theJdkVersion.length() );
+        StringBuilder buffer = new StringBuilder( theJdkVersion.length() );
 
         Iterator<String> iter = tokens.iterator();
         for ( int i = 0; i < tokens.size() && i < 4; i++ )
         {
-            String section = (String) iter.next();
+            String section = iter.next();
             section = section.replaceAll( "[^0-9]", "" );
 
             if ( StringUtils.isNotEmpty( section ) )

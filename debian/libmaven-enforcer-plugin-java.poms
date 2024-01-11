@@ -1,4 +1,4 @@
-pom.xml --no-parent
+pom.xml
 enforcer-api/pom.xml
 enforcer-rules/pom.xml
 maven-enforcer-plugin/pom.xml
