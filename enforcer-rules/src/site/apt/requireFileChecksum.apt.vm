@@ -25,12 +25,15 @@
 
 Require Files Checksum
 
-  This rule checks that the specified file has an given checksum.
+  This rule checks that the specified file has an given checksum. For text files
+  use {{{./requireTextFileChecksum.html}Require Text Files Checksum}} instead.
 
 
    The following parameters are supported by this rule:
 
-   * message - an optional message to the user if the rule fails.
+   * message - an optional message to the user if the rule fails. If not set a default message will be used.
+
+   * nonexistentFileMessage - an optional message to the user if the file is missing. If not set a default message will be used.
 
    * file - A file to check.
 

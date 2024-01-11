@@ -1,3 +1,16 @@
+maven-enforcer (3.1.0-1) unstable; urgency=medium
+
+  * Team upload.
+  * New upstream release
+    - Refreshed the patches
+    - Depend on libmaven-parent-java
+    - Depend on libmaven-dependency-tree-java (>= 3.1)
+    - Fixed the compatibility with maven-dependency-tree 3.2
+  * Standards-Version updated to 4.6.2
+  * Switch to debhelper level 13
+
+ -- Emmanuel Bourg <ebourg@apache.org>  Thu, 12 Jan 2023 15:38:25 +0100
+
 maven-enforcer (3.0.0~M2-1) unstable; urgency=medium
 
   * Team upload.

@@ -19,9 +19,11 @@ package org.apache.maven.plugins.enforcer;
  * under the License.
  */
 
-import junit.framework.TestCase;
+import static org.junit.jupiter.api.Assertions.fail;
+
 import org.apache.maven.enforcer.rule.api.EnforcerRuleException;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleHelper;
+import org.junit.jupiter.api.Test;
 
 /**
  * Unit test for {@link RequireEnvironmentVariable}}
@@ -29,16 +31,14 @@ import org.apache.maven.enforcer.rule.api.EnforcerRuleHelper;
  * @author <a href='mailto:marvin[at]marvinformatics[dot]com'>Marvin Froeder</a>
  */
 public class TestRequireEnvironmentVariable
-    extends TestCase
 {
 
     /**
      * Test rule.
      *
-     * @throws EnforcerRuleException the enforcer rule exception
      */
+    @Test
     public void testRule()
-        throws EnforcerRuleException
     {
         MockProject project = new MockProject();
         project.setProperty( "testProp", "This is a test." );
@@ -73,10 +73,9 @@ public class TestRequireEnvironmentVariable
     /**
      * Test rule with regex.
      *
-     * @throws EnforcerRuleException the enforcer rule exception
      */
+    @Test
     public void testRuleWithRegex()
-        throws EnforcerRuleException
     {
         EnforcerRuleHelper helper = EnforcerTestUtils.getHelper();
 

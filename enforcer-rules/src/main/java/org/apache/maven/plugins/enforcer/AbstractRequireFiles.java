@@ -69,7 +69,7 @@ public abstract class AbstractRequireFiles
             throw new EnforcerRuleException( "The file list is empty and Null files are disabled." );
         }
 
-        List<File> failures = new ArrayList<File>();
+        List<File> failures = new ArrayList<>();
         for ( File file : files )
         {
             if ( !allowNulls && file == null )
@@ -90,7 +90,7 @@ public abstract class AbstractRequireFiles
             StringBuilder buf = new StringBuilder();
             if ( message != null )
             {
-                buf.append( message + "\n" );
+                buf.append( message + System.lineSeparator() );
             }
             buf.append( getErrorMsg() );
 
@@ -98,11 +98,11 @@ public abstract class AbstractRequireFiles
             {
                 if ( file != null )
                 {
-                    buf.append( file.getAbsolutePath() + "\n" );
+                    buf.append( file.getAbsolutePath() + System.lineSeparator() );
                 }
                 else
                 {
-                    buf.append( "(an empty filename was given and allowNulls is false)\n" );
+                    buf.append( "(an empty filename was given and allowNulls is false)" + System.lineSeparator() );
                 }
             }
 
@@ -129,9 +129,8 @@ public abstract class AbstractRequireFiles
         if ( items != null )
         {
             hash = 1;
-            for ( int i = 0; i < items.length; i++ )
+            for ( Object item : items )
             {
-                Object item = items[i];
                 hash = 31 * hash + ( item == null ? 0 : item.hashCode() );
             }
         }

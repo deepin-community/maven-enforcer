@@ -1,0 +1,13 @@
+Description: Fixes the compatibility with maven-dependency-tree 3.2+
+Author: Emmanuel Bourg <ebourg@apache.org>
+Forwarded: no
+--- a/enforcer-rules/src/main/java/org/apache/maven/plugins/enforcer/BanTransitiveDependencies.java
++++ b/enforcer-rules/src/main/java/org/apache/maven/plugins/enforcer/BanTransitiveDependencies.java
+@@ -204,7 +204,6 @@
+                                                                           "default" );
+         // CHECKSTYLE_ON: LineLength
+ 
+-        builder.enableLogging( new ConsoleLogger( ConsoleLogger.LEVEL_DISABLED, "DefaultDependencyGraphBuilder" ) );
+ 
+         return builder;
+     }

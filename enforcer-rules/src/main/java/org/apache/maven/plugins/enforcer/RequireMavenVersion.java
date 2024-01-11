@@ -29,7 +29,6 @@ import org.codehaus.plexus.component.configurator.expression.ExpressionEvaluatio
  * This rule checks that the Maven version is allowed.
  *
  * @author <a href="mailto:brianf@apache.org">Brian Fox</a>
- * @version $Id$
  */
 public class RequireMavenVersion
     extends AbstractVersionEnforcer
@@ -43,12 +42,17 @@ public class RequireMavenVersion
             MavenSession mavenSession = (MavenSession) helper.evaluate( "${session}" );
             String mavenVersion = mavenSession.getSystemProperties().getProperty( "maven.version" );
             helper.getLog().debug( "Detected Maven Version: " + mavenVersion );
+            if ( mavenVersion == null )
+            {
+                throw new EnforcerRuleException(
+                        "Unable to detect Maven Version - missing system property - maven.version" );
+            }
             DefaultArtifactVersion detectedVersion = new DefaultArtifactVersion( mavenVersion );
             enforceVersion( helper.getLog(), "Maven", getVersion(), detectedVersion );
         }
         catch ( ExpressionEvaluationException e )
         {
-            e.printStackTrace();
+            throw new EnforcerRuleException( "Unable to retrieve the session.", e );
         }
 
     }
